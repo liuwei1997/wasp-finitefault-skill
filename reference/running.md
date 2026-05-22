@@ -46,6 +46,57 @@ The `auto_model -t body` pipeline (`wasp_admin/model.py`):
 | `-t surf` | Surface-wave only (requires GF bank) |
 | `-t body -t surf` | Joint body + surface wave inversion |
 
+## Surface-wave & joint inversion
+
+### Prerequisites
+
+Surface-wave inversion requires a Green's Function bank (`fd_bank`), which is
+~875 MB of pre-computed binary data distributed separately from the repo.
+
+The GF bank parameters in `fortran_code/gfs_nm/long/low.in` (first 3 lines)
+**must match** the `fd_bank` binary. If they don't match, the Fortran code
+will crash with an obscure error. Always verify:
+
+```bash
+# Check low.in parameters
+head -3 fortran_code/gfs_nm/long/low.in
+# These must match the fd_bank binary's internal header.
+# Default WASP values (from FiniteFault_Ori):
+#   9.0 21.6 5.0
+```
+
+### Running surface-wave only
+
+```bash
+wasp model run examples/tutorial_work/20150916225432/ffm_surf auto_model \
+  -g examples/data/20003k7a_cmt_CMT \
+  -t surf \
+  --data-dir examples/tutorial_work/20150916225432/ffm_body/data
+```
+
+### Running joint inversion (body + surface wave)
+
+```bash
+wasp model run examples/tutorial_work/20150916225432/ffm_joint auto_model \
+  --data-type body --data-type surf \
+  -g examples/data/20003k7a_cmt_CMT \
+  --data-dir examples/tutorial_work/20150916225432/ffm_body/data
+```
+
+> **`--data-dir` tip:** WASP does NOT auto-extract PZ files from ZIP archives.
+> PZ files must exist alongside SAC data in the directory pointed to by
+> `--data-dir`. Always run body-wave first (to populate PZ files), then point
+> surface-wave/joint runs to the same `data/` directory.
+
+### Expected joint inversion output
+
+The console prints TWO independent inversion blocks (one per nodal plane).
+Key metrics to watch:
+
+- `Amount of data values: N` — body+surf combined; expect 12,000+ for global events
+- `Total Mag: MwX.XX` — reported for each NP separately
+- Waveform fit plots include both `body BHZ/SH` and `surf BHZ/SH`
+
 ## Interpreting results
 
 Success produces:

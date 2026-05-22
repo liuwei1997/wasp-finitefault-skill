@@ -9,8 +9,8 @@ description: >
   imports, NumPy 2.0 `trapz`, incomplete PZ extraction from ZIP archives, missing
   GF banks). Do NOT use for generic seismology or waveform processing — this is
   specifically the NEIC `neic-finitefault` WASP toolchain.
-version: 1.0.0
-tags: [python, fortran, seismology, finite-fault, workflow]
+version: 1.1.0
+tags: [python, fortran, seismology, finite-fault, workflow, joint-inversion]
 ---
 
 # WASP Finite-Fault Inversion
@@ -25,8 +25,8 @@ inversions, and common failure modes.
 ## When this applies
 
 - Setting up the `neic-finitefault` repository for the first time
-- Running a body-wave (`-t body`) or surface-wave (`-t surf`) auto_model inversion
-- Debugging: "only 1 station was used," "PZ file not found," "GF bank missing"
+- Running a body-wave (`-t body`), surface-wave (`-t surf`), or joint (`-t body -t surf`) auto_model inversion
+- Debugging: "only 1 station was used," "PZ file not found," "GF bank missing," "low.in parameters don't match fd_bank"
 - Fixing Python import errors (cartopy, pygmt, NumPy) in WASP plotting code
 
 Do NOT use this for:
@@ -40,7 +40,8 @@ Do NOT use this for:
 |---|---|
 | Set up the code / compile / install deps | `reference/setup.md` |
 | Prepare data (SAC, PZ files, CMT, GF banks) | `reference/data-prep.md` |
-| Run the inversion (`auto_model`) | `reference/running.md` |
+| Run body-wave inversion | `reference/running.md` |
+| Run surface-wave or joint inversion | `reference/running.md#surface-wave--joint-inversion` |
 | Fix errors / understand common pitfalls | `reference/pitfalls.md` |
 
 ## What to expect

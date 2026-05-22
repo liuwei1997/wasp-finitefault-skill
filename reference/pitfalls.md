@@ -85,15 +85,32 @@ Files affected: `plot_utils.py`, `plot_graphic.py`,
 
 This affects 2 files.
 
-## 3. Surface-wave GF bank missing
+## 3. Surface-wave GF bank missing or parameter mismatch
 
 **Symptom**: Running `-t surf` fails with file-not-found error referencing a
-binary GF bank file.
+binary GF bank file, OR Fortran crashes with an obscure error during GF computation.
 
-**Root cause**: The surface-wave Green's Function bank is ~875 MB of
-pre-computed binary data. It is NOT distributed with the repository.
+**Root cause — GF bank file absent**: The surface-wave Green's Function bank is
+~875 MB of pre-computed binary data. It is NOT distributed with the repository.
 
-**Options**:
+**Root cause — parameter mismatch**: The first 3 lines of
+`fortran_code/gfs_nm/long/low.in` must match the internal header of the
+`fd_bank` binary. If they don't match (e.g. the repo ships with default values
+that differ from the binary), the Fortran run will crash during GF computation.
+
+**Fix**:
+```bash
+# 1. Verify low.in matches fd_bank
+head -3 fortran_code/gfs_nm/long/low.in
+# Correct values (from FiniteFault_Ori):
+#   9.0 21.6 5.0
+
+# 2. If they differ, backup and fix
+cp fortran_code/gfs_nm/long/low.in fortran_code/gfs_nm/long/low.in.bak
+# Edit line 1-3 to: 9.0 21.6 5.0
+```
+
+**Options for missing GF bank**:
 1. Use body-wave only (`-t body`) — works without GF bank
 2. Compute GF bank with `gf_surf_tel` (requires the full Fortran surf code)
 3. Request from USGS/NEIC
@@ -108,7 +125,35 @@ pre-computed binary data. It is NOT distributed with the repository.
   (the Python wrapper may handle data copying internally)
 - Manually copy data files to the working directory
 
-## 5. Fortran compilation errors
+## 5. Surface-wave inversion: only 1 station
+
+**Symptom**: Surface-wave (or joint) inversion produces only 1 station, despite
+body-wave inversion using 43 stations with the same dataset.
+
+**Root cause — PZ files not in search path**: WASP does NOT automatically
+extract PZ response files from ZIP archives. During body-wave processing,
+`__remove_response_body` extracts and copies PZ files to the data directory.
+But surface-wave processing expects PZ files to already exist in the same
+directory as the SAC data.
+
+**Fix — use `--data-dir` to point to pre-populated PZ directory**:
+```bash
+# Step 1: Run body-wave first (this populates PZ files in the data dir)
+wasp model run ffm_body auto_model -g <cmt> -t body
+
+# Step 2: Point surf/joint to the same data dir
+wasp model run ffm_joint auto_model \
+  --data-type body --data-type surf \
+  -g <cmt> --data-dir ffm_body/data
+```
+
+> **Surface-wave data preprocessing constraints:**
+> - Epicentral distance window: 31°–89° (same as body wave)
+> - Start time constraint: `starttime < origin + 20min` (strict)
+> - Both constraints are hard filters; stations outside these windows are
+>   silently dropped before PZ matching even begins.
+
+## 6. Fortran compilation errors
 
 **Symptom**: `gfortran: error: unrecognized command line option '-fopenmp'`
 
@@ -127,7 +172,7 @@ brew install gcc  # provides gfortran with OpenMP
 gfortran -fopenmp gf_bank_tel.o lib_ffm.o -o gf_bank_tel
 ```
 
-## 6. PlotMap missing pygmt
+## 7. PlotMap missing pygmt
 
 **Symptom**: `NameError: name 'pygmt' is not defined` in `plot_graphic_NEIC.py`
 
@@ -141,7 +186,7 @@ else:
     return  # graceful exit
 ```
 
-## 7. config.ini paths
+## 8. config.ini paths
 
 **Symptom**: WASP can't find data files.
 
