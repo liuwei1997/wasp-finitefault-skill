@@ -9,8 +9,8 @@ description: >
   imports, NumPy 2.0 `trapz`, incomplete PZ extraction from ZIP archives, missing
   GF banks). Do NOT use for generic seismology or waveform processing — this is
   specifically the NEIC `neic-finitefault` WASP toolchain.
-version: 1.1.0
-tags: [python, fortran, seismology, finite-fault, workflow, joint-inversion]
+version: 1.2.0
+tags: [python, fortran, seismology, finite-fault, workflow, joint-inversion, local-data]
 ---
 
 # WASP Finite-Fault Inversion
@@ -42,6 +42,7 @@ Do NOT use this for:
 | Prepare data (SAC, PZ files, CMT, GF banks) | `reference/data-prep.md` |
 | Run body-wave inversion | `reference/running.md` |
 | Run surface-wave or joint inversion | `reference/running.md#surface-wave--joint-inversion` |
+| Add local data (strong motion, cGPS, GPS static) | `reference/running.md#adding-local-data` |
 | Fix errors / understand common pitfalls | `reference/pitfalls.md` |
 
 ## What to expect
@@ -51,6 +52,13 @@ A successful body-wave inversion produces:
 - `NP1/` and `NP2/` subdirectories with slip-distribution plots
 - Output: Mw, moment-rate function, slip distribution, waveform fits
 - Typical runtime: 30–300 s depending on station count and iteration budget
+
+A joint inversion with local data produces:
+- `NP1.X/` directories after each `manual_model_add_data` step
+- GF bank files: `GF_strong` (~2.2 GB), `GF_cgps` (~2.5 GB)
+- `static_synthetics.txt` — GPS static predictions (cm, columns: U N E)
+- Plot files including `strong_motion_waves.png`, `cGPS_waves.png`
+- `static_gps_summary.txt` — per-station observed/predicted/residual table
 
 ## Constraints
 

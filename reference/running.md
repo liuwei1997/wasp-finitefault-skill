@@ -97,6 +97,54 @@ Key metrics to watch:
 - `Total Mag: MwX.XX` — reported for each NP separately
 - Waveform fit plots include both `body BHZ/SH` and `surf BHZ/SH`
 
+## Adding local data
+
+After a successful `auto_model` (joint body+surf), you can incrementally add
+local data types using `manual_model_add_data`. The workflow follows
+`WASP_Tutorial.ipynb` sections 4.1–4.3:
+
+### 4.1 Strong motion
+
+```bash
+# Extract strong motion data to the data/ directory
+unzip StrongMotion_Accelerometer_Data.zip -d data/
+
+# Copy NP1 to a new working copy
+cp -r NP1 NP1.1
+
+# Add strong motion data
+wasp model run NP1.1 manual_model_add_data -d data/ -t strong
+```
+
+### 4.2 High-rate GNSS (cGPS)
+
+```bash
+cp -r NP1.1 NP1.2
+unzip HighRateGNSS_Data.zip -d data/
+wasp model run NP1.2 manual_model_add_data -d data/ -t cgps
+```
+
+### 4.3 Static GPS offsets
+
+```bash
+cp -r NP1.2 NP1.3
+cp gps_data NP1.3/
+wasp manage fill-dicts NP1.3 -t gps
+wasp manage update-inputs NP1.3 -t gps
+wasp process greens NP1.3 -t gps
+
+# Rerun full inversion with all data types
+wasp model run NP1.3 manual_model -t body -t surf -t strong -t cgps -t gps
+```
+
+> **Note**: Static GPS uses `manual_model` (not `manual_model_add_data`)
+> and requires `fill-dicts` + `update-inputs` + `process greens` beforehand.
+
+### GPS static output
+
+The Fortran binary writes GPS predictions to `static_synthetics.txt` in the
+working directory. Format: `index name lat lon U N E` (all in cm).
+
 ## Interpreting results
 
 Success produces:

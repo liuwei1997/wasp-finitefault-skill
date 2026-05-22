@@ -201,6 +201,45 @@ path = /absolute/path/to/examples/data/LITHO1.0.nc
 
 Use absolute paths if relative paths don't resolve correctly.
 
+## 9. Fortran character(100) path overflow — "Cannot open file …/20"
+
+**Symptom**: Fortran binaries crash with:
+```
+At line XX of file retrieve_gf.f95 (unit = 1)
+Fortran runtime error: Cannot open file '.../ffm_X/20': No such file or directory
+```
+The path is truncated at exactly 100 characters (the `20` is the start of
+`20150916225432/...`).
+
+**Root cause**: Multiple Fortran source files declare
+`character(len=100)` for path variables. When the working directory exceeds
+100 characters, paths are silently truncated. This affects:
+
+| File | Line(s) | Variable(s) |
+|------|---------|-------------|
+| `src_dc_f95/green_bank_fk_openmp.f95` | 23 | `directory`, `gf_file`, `vel_model`, `gf_bank` |
+| `src_dc_f95/retrieve_gf.f95` | 27-28 | `gf_file`, `vel_model`, `gf_bank` |
+| `src_dc_f95/vel_model_data.f95` | 22 | `vel_model` |
+| `src_dc_f95/gf_static.f95` | 16 | `input` |
+| `bin_str_f95/get_strong_motion.f95` | 17 | `gf_file`, `gf_bank`, `vel_model`, etc. |
+| `bin_str_f95/retrieve_gf.f95` | 25-26, 47 | `gf_file`, `vel_model`, `gf_bank` |
+| `bin_str_f95/vel_model_data.f95` | 22 | `vel_model` |
+| `bin_str_f95/store_gf.f95` | 84 | `filter_file`, `wave_file`, etc. |
+
+**Fix**: Replace all `character(len=100)` with `character(len=500)` and
+recompile:
+```bash
+cd fortran_code/src_dc_f95
+sed -i 's/character(len=100)/character(len=500)/g' *.f95
+make clean && make green_bank_openmp && make gf_static
+cd ../bin_str_f95
+sed -i 's/character(len=100)/character(len=500)/g' *.f95
+make get_strong_motion
+```
+
+> **Note**: The bundled notebook will not hit this bug because its working
+> directory path (~75 chars) fits within 100 characters.
+
 ## Diagnostic commands summary
 
 ```bash
